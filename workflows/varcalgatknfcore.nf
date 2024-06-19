@@ -13,6 +13,7 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_varcalgatknfcore_pipeline'
 include { BWA_INDEX } from '../modules/nf-core/bwa/index/main'
 include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
+include { PICARD_ADDORREPLACEREADGROUPS } from '../modules/nf-core/picard/addorreplacereadgroups/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -109,21 +110,30 @@ workflow VARCALGATKNFCORE {
 
 
     ch_genome_fasta = Channel.fromPath(params.fasta).map { it -> [[id:it[0].simpleName], it] }.collect()
-    // //
-    // // MODULE: BWA_INDEX
-    // //
+    //
+    // MODULE: BWA_INDEX
+    //
     BWA_INDEX (
         ch_genome_fasta // tuple val(meta), path(fasta)
     )
 
-    // //
-    // // MODULE: BWA_MEM
-    // //
+    //
+    // MODULE: BWA_MEM
+    //
     BWA_MEM (
     ch_samplesheet, //tuple val(meta) , path(reads)
     BWA_INDEX.out.index, //tuple val(meta2), path(index)
     ch_genome_fasta, //tuple val(meta3), path(fasta)
     params.sort_bam
+    )
+
+    // //
+    // // MODULE: PICARD_ADDORREPLACEREADGROUPS
+    // //
+    PICARD_ADDORREPLACEREADGROUPS (
+    BWA_MEM.out.bam, // tuple val(meta), path(reads)
+    ch_genome_fasta, // tuple val(meta2), path(fasta)
+    BWA_INDEX.out.index // tuple val(meta3), path(fasta_index)
     )
 
 

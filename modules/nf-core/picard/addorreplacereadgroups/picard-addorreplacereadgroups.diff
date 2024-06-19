@@ -1,0 +1,23 @@
+Changes in module 'nf-core/picard/addorreplacereadgroups'
+--- modules/nf-core/picard/addorreplacereadgroups/main.nf
++++ modules/nf-core/picard/addorreplacereadgroups/main.nf
+@@ -33,7 +33,7 @@
+         avail_mem = (task.memory.mega*0.8).intValue()
+     }
+ 
+-    if ("$reads" == "${prefix}.${suffix}") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
++    // if ("$reads" == "${prefix}.${suffix}") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
+ 
+     """
+     picard \\
+@@ -42,7 +42,7 @@
+         $args \\
+         $reference \\
+         --INPUT ${reads} \\
+-        --OUTPUT ${prefix}.${suffix}
++        --OUTPUT ${prefix}.RG.${suffix}  # --OUTPUT ${prefix}.${suffix}
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+
+************************************************************
