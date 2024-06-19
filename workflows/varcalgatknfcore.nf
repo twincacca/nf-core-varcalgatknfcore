@@ -12,6 +12,7 @@ include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pi
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_varcalgatknfcore_pipeline'
 include { BWA_INDEX } from '../modules/nf-core/bwa/index/main'
+include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -115,6 +116,15 @@ workflow VARCALGATKNFCORE {
         ch_genome_fasta // tuple val(meta), path(fasta)
     )
 
+    // //
+    // // MODULE: BWA_MEM
+    // //
+    BWA_MEM (
+    ch_samplesheet, //tuple val(meta) , path(reads)
+    BWA_INDEX.out.index, //tuple val(meta2), path(index)
+    ch_genome_fasta, //tuple val(meta3), path(fasta)
+    params.sort_bam
+    )
 
 
     emit:
