@@ -10,6 +10,11 @@
                         "git_sha": "e0ff65e1fb313677de09f5f477ae3da30ce19b7b",
                         "installed_by": ["modules"]
                     },
+                    "bwa/mem": {
+                        "branch": "master",
+                        "git_sha": "e0ff65e1fb313677de09f5f477ae3da30ce19b7b",
+                        "installed_by": ["modules"]
+                    },
                     "fastp": {
                         "branch": "master",
                         "git_sha": "b90b5cd93149a1b3be263d916c7234fe0708a71c",
@@ -22,7 +27,7 @@
                     },
                     "multiqc": {
                         "branch": "master",
-                        "git_sha": "b7ebe95761cd389603f9cc0e0dc384c0f663815a",
+                        "git_sha": "8f2062e7b4185590fb9f43c275381a31a6544fc0",
                         "installed_by": ["modules"]
                     }
                 }

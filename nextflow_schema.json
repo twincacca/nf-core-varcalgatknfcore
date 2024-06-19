@@ -305,6 +305,10 @@
         },
         "save_merged": {
             "type": "boolean"
+        },
+        "sort_bam": {
+            "type": "boolean",
+            "default": true
         }
     }
 }
