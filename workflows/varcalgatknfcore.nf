@@ -15,6 +15,7 @@ include { BWA_INDEX } from '../modules/nf-core/bwa/index/main'
 include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
 include { PICARD_ADDORREPLACEREADGROUPS } from '../modules/nf-core/picard/addorreplacereadgroups/main'
 include { PICARD_SORTSAM } from '../modules/nf-core/picard/sortsam/main'
+include { PICARD_MARKDUPLICATES } from '../modules/nf-core/picard/markduplicates/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,6 +147,14 @@ workflow VARCALGATKNFCORE {
     params.sort_order // val sort_order
     )
 
+    // //
+    // // MODULE: PICARD_MARKDUPLICATES
+    // //
+    PICARD_MARKDUPLICATES (
+    PICARD_SORTSAM.out.bam, // tuple val(meta), path(reads)
+    ch_genome_fasta, // tuple val(meta2), path(fasta)
+    BWA_INDEX.out.index // tuple val(meta3), path(fai)
+    )
 
 
     emit:

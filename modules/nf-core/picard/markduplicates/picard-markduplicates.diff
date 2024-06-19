@@ -1,0 +1,23 @@
+Changes in module 'nf-core/picard/markduplicates'
+--- modules/nf-core/picard/markduplicates/main.nf
++++ modules/nf-core/picard/markduplicates/main.nf
+@@ -34,7 +34,7 @@
+         avail_mem = (task.memory.mega*0.8).intValue()
+     }
+ 
+-    if ("$reads" == "${prefix}.${suffix}") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
++    // if ("$reads" == "${prefix}.${suffix}") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
+ 
+     """
+     picard \\
+@@ -42,7 +42,7 @@
+         MarkDuplicates \\
+         $args \\
+         --INPUT $reads \\
+-        --OUTPUT ${prefix}.${suffix} \\
++        --OUTPUT ${prefix}.dup.${suffix} \\
+         $reference \\
+         --METRICS_FILE ${prefix}.MarkDuplicates.metrics.txt
+ 
+
+************************************************************
