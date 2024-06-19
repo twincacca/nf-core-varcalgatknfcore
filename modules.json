@@ -35,6 +35,11 @@
                         "git_sha": "1943aa60f7490c3d6740e8872e6e69122ccc8087",
                         "installed_by": ["modules"],
                         "patch": "modules/nf-core/picard/addorreplacereadgroups/picard-addorreplacereadgroups.diff"
+                    },
+                    "picard/sortsam": {
+                        "branch": "master",
+                        "git_sha": "20b0918591d4ba20047d7e13e5094bcceba81447",
+                        "installed_by": ["modules"]
                     }
                 }
             },

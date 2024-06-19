@@ -14,6 +14,8 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_varc
 include { BWA_INDEX } from '../modules/nf-core/bwa/index/main'
 include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
 include { PICARD_ADDORREPLACEREADGROUPS } from '../modules/nf-core/picard/addorreplacereadgroups/main'
+include { PICARD_SORTSAM } from '../modules/nf-core/picard/sortsam/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -135,6 +137,15 @@ workflow VARCALGATKNFCORE {
     ch_genome_fasta, // tuple val(meta2), path(fasta)
     BWA_INDEX.out.index // tuple val(meta3), path(fasta_index)
     )
+
+    // //
+    // // MODULE: PICARD_SORTSAM
+    // //
+    PICARD_SORTSAM (
+    PICARD_ADDORREPLACEREADGROUPS.out.bam, // tuple val(meta), path(bam)
+    params.sort_order // val sort_order
+    )
+
 
 
     emit:

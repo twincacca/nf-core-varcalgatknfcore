@@ -309,6 +309,10 @@
         "sort_bam": {
             "type": "boolean",
             "default": true
+        },
+        "sort_order": {
+            "type": "string",
+            "default": "coordinate"
         }
     }
 }
