@@ -11,7 +11,7 @@ include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_varcalgatknfcore_pipeline'
-
+include { BWA_INDEX } from '../modules/nf-core/bwa/index/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -105,6 +105,17 @@ workflow VARCALGATKNFCORE {
         ch_multiqc_custom_config.toList(),
         ch_multiqc_logo.toList()
     )
+
+
+    ch_genome_fasta = Channel.fromPath(params.fasta).map { it -> [[id:it[0].simpleName], it] }.collect()
+    // //
+    // // MODULE: BWA_INDEX
+    // //
+    BWA_INDEX (
+        ch_genome_fasta // tuple val(meta), path(fasta)
+    )
+
+
 
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
