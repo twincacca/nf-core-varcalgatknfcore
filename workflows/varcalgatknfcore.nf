@@ -21,6 +21,8 @@ include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
 include { SAMTOOLS_DICT } from '../modules/nf-core/samtools/dict/main'
 include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
 include { GATK4_APPLYBQSR } from '../modules/nf-core/gatk4/applybqsr/main'
+include { GATK4_MUTECT2 } from '../modules/nf-core/gatk4/mutect2/main'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -226,6 +228,23 @@ workflow VARCALGATKNFCORE {
     params.fasta, // path  fasta
     SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai 
     SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict 
+    )
+
+    // tup_meta_fasta = params.fasta.join(SAMTOOLS_FAIDX.out.fai).map{ f, meta -> [[meta], f] }
+    // tup_meta_fasta.view()
+
+    // //
+    // // MODULE: GATK4_MUTECT2
+    // //
+    GATK4_MUTECT2 (
+    tup_meta_bam_bai_int, // tuple val(meta), path(input), path(input_index), path(intervals)
+    ch_genome_fasta, // tuple val(meta2), path(fasta)
+    SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
+    SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
+    [], // path(germline_resource) .vcf.gz
+    [], // path(germline_resource_tbi) .vcf.gz.tbi
+    [], // path(panel_of_normals) .vcf.gz
+    [], // path(panel_of_normals_tbi) .vcf.gz.tbi
     )
 
 
