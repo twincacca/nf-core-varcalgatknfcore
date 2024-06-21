@@ -16,6 +16,10 @@ include { BWA_MEM } from '../modules/nf-core/bwa/mem/main'
 include { PICARD_ADDORREPLACEREADGROUPS } from '../modules/nf-core/picard/addorreplacereadgroups/main'
 include { PICARD_SORTSAM } from '../modules/nf-core/picard/sortsam/main'
 include { PICARD_MARKDUPLICATES } from '../modules/nf-core/picard/markduplicates/main'
+include { GATK4_BASERECALIBRATOR } from '../modules/nf-core/gatk4/baserecalibrator/main'
+include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
+include { SAMTOOLS_DICT } from '../modules/nf-core/samtools/dict/main'
+include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,6 +160,58 @@ workflow VARCALGATKNFCORE {
     BWA_INDEX.out.index // tuple val(meta3), path(fai)
     )
 
+    // // //
+    // // // MODULE: SAMTOOLS_INDEX
+    // // //
+    // SAMTOOLS_INDEX (
+    // ch_genome_fasta // tuple val(meta), path(input)
+    // )
+    // // SAMTOOLS_INDEX.out.fai[1].view() // vorrei prendere il 2nd element ma si deve fare cosi:
+    // fasta_fai = SAMTOOLS_INDEX.out.fai.subscribe { result ->
+    // // Assuming result is a list or tuple, extract the second element
+    // def second_argument = result[1]
+    // println(second_argument)
+    // }
+
+
+
+    // //
+    // // MODULE: SAMTOOLS_DICT
+    // //
+    SAMTOOLS_FAIDX (
+    ch_genome_fasta // tuple val(meta), path(input)
+    )
+
+
+    // //
+    // // MODULE: SAMTOOLS_DICT
+    // //
+    SAMTOOLS_DICT (
+    ch_genome_fasta // tuple val(meta), path(input)
+    )
+
+
+    // transform info from mark dup into something that fits GATK4_BASERECALIBRATOR 
+    picard_mark_dup_bam = PICARD_MARKDUPLICATES.out.bam
+    picard_mark_dup_bai = PICARD_MARKDUPLICATES.out.bai
+    picard_mark_dup_metrics = PICARD_MARKDUPLICATES.out.metrics
+    
+    tup_meta_bam_bai_int = (picard_mark_dup_bam.join(picard_mark_dup_bai)).join(picard_mark_dup_metrics)
+    .map{ meta, bam, bai, met -> [ meta, bam, bai, [] ] } // [] = no intervals provided
+    //tup_meta_bam_bai_int.view()
+    //> [[id:WT_REP1, single_end:false], /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/da/08b2b9033a88d112e10107ebb488fa/WT_REP1.dup.bam, /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/da/08b2b9033a88d112e10107ebb488fa/WT_REP1.dup.bai, []]
+
+    // //
+    // // MODULE: GATK4_BASERECALIBRATOR
+    // //
+    GATK4_BASERECALIBRATOR (
+    tup_meta_bam_bai_int, // tuple val(meta), path(input), path(input_index), path(intervals)
+    params.fasta, // path  fasta
+    SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai // remove meta with map
+    SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict  // remove meta with map
+    params.vcf, // path  known_sites // adesso li presi local!!!
+    params.vcf_tbi // path  known_sites_tbi
+    )
 
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html

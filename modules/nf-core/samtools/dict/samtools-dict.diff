@@ -1,0 +1,14 @@
+Changes in module 'nf-core/samtools/dict'
+--- modules/nf-core/samtools/dict/main.nf
++++ modules/nf-core/samtools/dict/main.nf
+@@ -24,7 +24,7 @@
+         dict \\
+         $args \\
+         $fasta \\
+-        > ${fasta}.dict
++        > ${fasta.simpleName}.dict
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+
+************************************************************
