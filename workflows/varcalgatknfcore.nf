@@ -20,7 +20,7 @@ include { GATK4_BASERECALIBRATOR } from '../modules/nf-core/gatk4/baserecalibrat
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
 include { SAMTOOLS_DICT } from '../modules/nf-core/samtools/dict/main'
 include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
-
+include { GATK4_APPLYBQSR } from '../modules/nf-core/gatk4/applybqsr/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -207,11 +207,28 @@ workflow VARCALGATKNFCORE {
     GATK4_BASERECALIBRATOR (
     tup_meta_bam_bai_int, // tuple val(meta), path(input), path(input_index), path(intervals)
     params.fasta, // path  fasta
-    SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai // remove meta with map
-    SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict  // remove meta with map
-    params.vcf, // path  known_sites // adesso li presi local!!!
+    SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai
+    SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict 
+    params.vcf, // path  known_sites 
     params.vcf_tbi // path  known_sites_tbi
     )
+
+    tup_meta_bam_bai_tab_int = tup_meta_bam_bai_int.join(GATK4_BASERECALIBRATOR.out.table)
+    .map{ meta, bam, bai, interv, tab -> [ meta, bam, bai, tab, interv ] } 
+    //.view()
+    // //> [[id:WT_REP1, single_end:false], /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/c6/1184c8d59299ea09ec468fa6fe252f/WT_REP1.dup.bam, /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/c6/1184c8d59299ea09ec468fa6fe252f/WT_REP1.dup.bai, /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/8a/ef7e750ec4ab147c0f6ae129b3e0e9/WT_REP1.table, []]
+
+    // //
+    // // MODULE: GATK4_APPLYBQSR
+    // //
+    GATK4_APPLYBQSR (
+    tup_meta_bam_bai_tab_int, // tuple val(meta), path(input), path(input_index), path(bqsr_table), path(intervals)
+    params.fasta, // path  fasta
+    SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai 
+    SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict 
+    )
+
+
 
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
