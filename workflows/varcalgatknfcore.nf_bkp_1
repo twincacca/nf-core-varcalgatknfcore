@@ -248,29 +248,119 @@ workflow VARCALGATKNFCORE {
     [], // path(panel_of_normals_tbi) .vcf.gz.tbi
     )
 
+    
 
-    tup_meta_vcf_vcftbi = GATK4_MUTECT2.out.vcf.join(GATK4_MUTECT2.out.tbi, failOnMismatch:true, failOnDuplicate:true)
-    //tup_meta_vcf_vcftbi.view()
-    //> [[id:WT_REP1, single_end:false], .../WT_REP1.vcf.gz, .../WT_REP1.vcf.gz.tbi]
-    tup_meta_vcf_vcftbi_stats = tup_meta_vcf_vcftbi.join(GATK4_MUTECT2.out.stats, failOnMismatch:true, failOnDuplicate:true)
-    //tup_meta_vcf_vcftbi_stats.view()
-    //> [[id:WT_REP1, single_end:false], .../WT_REP1.vcf.gz, .../WT_REP1.vcf.gz.tbi, .../WT_REP1.vcf.gz.stats]
-    tup_meta_vcf_vcftbi_stats_oribias_segm_table_est    = tup_meta_vcf_vcftbi_stats.map {
-                        meta, vcf, tbi, stats ->
-                        return [meta, vcf, tbi, stats, [], [], [], []]
-                    }
-    //tup_meta_vcf_vcftbi_stats_oribias_segm_table_est.view()
-    //> [[id:WT_REP1, single_end:false], .../WT_REP1.vcf.gz, .../WT_REP1.vcf.gz.tbi, .../WT_REP1.vcf.gz.stats, [], [], [], []]
+    // ch1.join(ch2)//.join(ch3).join(ch4)
+    // // .map{ meta, vcf -> [vcf] }
 
-    // //
-    // // MODULE: GATK4_FILTERMUTECTCALLS
-    // //
-    GATK4_FILTERMUTECTCALLS (
-    tup_meta_vcf_vcftbi_stats_oribias_segm_table_est,// tuple val(meta), path(vcf), path(vcf_tbi), path(stats), path(orientationbias), path(segmentation), path(table), val(estimate)
-    ch_genome_fasta, // tuple val(meta2), path(fasta)
-    SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
-    SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
-    )
+    // GATK4_MUTECT2.out.vcf.concat(GATK4_MUTECT2.out.tbi, GATK4_MUTECT2.out.stats)
+    // .groupTuple().map{ meta, [vcf, vcftbi, stats] -> [meta] }
+    // .view()
+
+
+    // // tup_meta_vcf_vcftbi_stats_oribias_segm_table_est
+
+    // ch1 = GATK4_MUTECT2.out.vcf
+    // ch2 = GATK4_MUTECT2.out.tbi
+    // ch3 = GATK4_MUTECT2.out.stats
+    // ch4 = GATK4_MUTECT2.out.f1r2 // this is empty
+
+    // Channel.combine(ch1, ch2, ch3).view()
+
+// Channel
+//     .combine(ch1, ch2, ch3)
+    // .map { o1,o2,o3
+    //         ->
+    //     // Transform combined output into a tuple
+    //     tuple(
+    //         o1 ?: [], 
+    //         o2 ?: [], 
+    //         o3 ?: [], 
+    //         // o4 ?: []  
+    //         // o1.collectFile().toList(),
+    //         // o2.collectFile().toList(),
+    //         // o3.collectFile().toList(),
+    //         // o4.collectFile().toList()
+    //     )
+    // }
+    // .set { tup_meta_vcf_vcftbi_stats_oribias_segm_table_est }
+    // ch1.view()
+    // ch2.view()
+    // ch3.view()
+
+// tup_meta_vcf_vcftbi_stats_oribias_segm_table_est.view()
+
+
+
+
+// Define empty channels to handle cases where the process output might be empty
+// def empty_output = Channel.value([])
+
+// // Collect files from each process, defaulting to empty if not produced
+// def collected1 = ch1.ifEmpty([]).map { it -> it.collect() }
+// def collected2 = ch2.ifEmpty([]).map { it -> it.collect() }
+// def collected3 = ch3.ifEmpty([]).map { it -> it.collect() }
+// def collected4 = ch4.ifEmpty([]).map { it -> it.collect() }
+
+// // Combine outputs from the four processes
+// Channel
+//     .combine(collected1, collected2, collected3, collected4)
+//     .map { o1, o2, o3, o4 ->
+//         // Transform combined output into a tuple
+//         tuple(
+//             o1 ?: [],
+//             o2 ?: [],
+//             o3 ?: [],
+//             o4 ?: []
+//         )
+//     }
+//     .set { combined_output }
+
+// combined_output.view()
+
+// ch1.ifEmpty([]).map { it -> it.collect() }.view()
+// ch2.ifEmpty([]).map { it -> it.collect() }.view()
+// ch3.ifEmpty([]).map { it -> it.collect() }.view()
+// ch4.ifEmpty([]).map { it -> it.collect() }.view()
+
+// combine(
+// ch1.ifEmpty([]).map { it -> it.collect() },
+// ch2.ifEmpty([]).map { it -> it.collect() },
+// // ch3.ifEmpty([]).map { it -> it.collect() },
+// // ch4.ifEmpty([]).map { it -> it.collect() }
+//         ).view()
+
+
+
+
+// // Ensure all output channels have a default value if empty
+// output1 = output1.ifEmpty(empty_output)
+// output2 = output2.ifEmpty(empty_output)
+// output3 = output3.ifEmpty(empty_output)
+// output4 = output4.ifEmpty(empty_output)
+
+// // Mix all output channels
+// def mixedOutput = Channel.from
+//     .mix(output1.ifEmpty([]), output2.ifEmpty([]), output3.ifEmpty([]), output4.ifEmpty([]))
+
+
+    ch1 = GATK4_MUTECT2.out.vcf
+    ch2 = GATK4_MUTECT2.out.tbi
+    ch3 = GATK4_MUTECT2.out.stats
+    ch4 = GATK4_MUTECT2.out.f1r2 // this is empty
+
+    Channel.mix(ch1, ch2, ch3).view()
+
+
+    // // //
+    // // // MODULE: GATK4_FILTERMUTECTCALLS
+    // // //
+    // GATK4_FILTERMUTECTCALLS (
+    // // tuple val(meta), path(vcf), path(vcf_tbi), path(stats), path(orientationbias), path(segmentation), path(table), val(estimate)
+    // ch_genome_fasta, // tuple val(meta2), path(fasta)
+    // SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
+    // SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
+    // )
 
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
