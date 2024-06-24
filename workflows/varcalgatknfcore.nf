@@ -23,6 +23,8 @@ include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
 include { GATK4_APPLYBQSR } from '../modules/nf-core/gatk4/applybqsr/main'
 include { GATK4_MUTECT2 } from '../modules/nf-core/gatk4/mutect2/main'
 include { GATK4_FILTERMUTECTCALLS } from '../modules/nf-core/gatk4/filtermutectcalls'
+include { GATK4_HAPLOTYPECALLER } from '../modules/nf-core/gatk4/haplotypecaller/main'
+include { BCFTOOLS_INDEX } from '../modules/nf-core/bcftools/index/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,11 +38,8 @@ workflow VARCALGATKNFCORE {
     ch_samplesheet // channel: samplesheet read in from --input
 
     main:
-
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
-
-
 
     //
     // MODULE: FASTP
@@ -57,7 +56,6 @@ workflow VARCALGATKNFCORE {
     )
     ch_multiqc_files = ch_multiqc_files.mix(FASTP.out.json.collect{it[1]}.ifEmpty([]))
     ch_versions      = ch_versions.mix(FASTP.out.versions.first())
-
 
     //
     // MODULE: Run FastQC
@@ -118,11 +116,10 @@ workflow VARCALGATKNFCORE {
         ch_multiqc_logo.toList()
     )
 
-
-    ch_genome_fasta = Channel.fromPath(params.fasta).map { it -> [[id:it[0].simpleName], it] }.collect()
     //
     // MODULE: BWA_INDEX
     //
+    ch_genome_fasta = Channel.fromPath(params.fasta).map { it -> [[id:it[0].simpleName], it] }.collect()
     BWA_INDEX (
         ch_genome_fasta // tuple val(meta), path(fasta)
     )
@@ -163,28 +160,12 @@ workflow VARCALGATKNFCORE {
     BWA_INDEX.out.index // tuple val(meta3), path(fai)
     )
 
-    // // //
-    // // // MODULE: SAMTOOLS_INDEX
-    // // //
-    // SAMTOOLS_INDEX (
-    // ch_genome_fasta // tuple val(meta), path(input)
-    // )
-    // // SAMTOOLS_INDEX.out.fai[1].view() // vorrei prendere il 2nd element ma si deve fare cosi:
-    // fasta_fai = SAMTOOLS_INDEX.out.fai.subscribe { result ->
-    // // Assuming result is a list or tuple, extract the second element
-    // def second_argument = result[1]
-    // println(second_argument)
-    // }
-
-
-
     // //
     // // MODULE: SAMTOOLS_DICT
     // //
     SAMTOOLS_FAIDX (
     ch_genome_fasta // tuple val(meta), path(input)
     )
-
 
     // //
     // // MODULE: SAMTOOLS_DICT
@@ -193,7 +174,9 @@ workflow VARCALGATKNFCORE {
     ch_genome_fasta // tuple val(meta), path(input)
     )
 
-
+    // //
+    // // MODULE: GATK4_BASERECALIBRATOR
+    // //
     // transform info from mark dup into something that fits GATK4_BASERECALIBRATOR 
     picard_mark_dup_bam = PICARD_MARKDUPLICATES.out.bam
     picard_mark_dup_bai = PICARD_MARKDUPLICATES.out.bai
@@ -204,9 +187,6 @@ workflow VARCALGATKNFCORE {
     //tup_meta_bam_bai_int.view()
     //> [[id:WT_REP1, single_end:false], /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/da/08b2b9033a88d112e10107ebb488fa/WT_REP1.dup.bam, /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/da/08b2b9033a88d112e10107ebb488fa/WT_REP1.dup.bai, []]
 
-    // //
-    // // MODULE: GATK4_BASERECALIBRATOR
-    // //
     GATK4_BASERECALIBRATOR (
     tup_meta_bam_bai_int, // tuple val(meta), path(input), path(input_index), path(intervals)
     params.fasta, // path  fasta
@@ -216,23 +196,20 @@ workflow VARCALGATKNFCORE {
     params.vcf_tbi // path  known_sites_tbi
     )
 
+    // //
+    // // MODULE: GATK4_APPLYBQSR
+    // //
     tup_meta_bam_bai_tab_int = tup_meta_bam_bai_int.join(GATK4_BASERECALIBRATOR.out.table)
     .map{ meta, bam, bai, interv, tab -> [ meta, bam, bai, tab, interv ] } 
     //.view()
     // //> [[id:WT_REP1, single_end:false], /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/c6/1184c8d59299ea09ec468fa6fe252f/WT_REP1.dup.bam, /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/c6/1184c8d59299ea09ec468fa6fe252f/WT_REP1.dup.bai, /home/antoinebuetti/Desktop/work/varCalling_NextFlow_nfcore/nf-core-varcalgatknfcore/work/8a/ef7e750ec4ab147c0f6ae129b3e0e9/WT_REP1.table, []]
 
-    // //
-    // // MODULE: GATK4_APPLYBQSR
-    // //
     GATK4_APPLYBQSR (
     tup_meta_bam_bai_tab_int, // tuple val(meta), path(input), path(input_index), path(bqsr_table), path(intervals)
     params.fasta, // path  fasta
     SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai 
     SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict 
     )
-
-    // tup_meta_fasta = params.fasta.join(SAMTOOLS_FAIDX.out.fai).map{ f, meta -> [[meta], f] }
-    // tup_meta_fasta.view()
 
     // //
     // // MODULE: GATK4_MUTECT2
@@ -249,6 +226,9 @@ workflow VARCALGATKNFCORE {
     )
 
 
+    // //
+    // // MODULE: GATK4_FILTERMUTECTCALLS
+    // //
     tup_meta_vcf_vcftbi = GATK4_MUTECT2.out.vcf.join(GATK4_MUTECT2.out.tbi, failOnMismatch:true, failOnDuplicate:true)
     //tup_meta_vcf_vcftbi.view()
     //> [[id:WT_REP1, single_end:false], .../WT_REP1.vcf.gz, .../WT_REP1.vcf.gz.tbi]
@@ -262,14 +242,37 @@ workflow VARCALGATKNFCORE {
     //tup_meta_vcf_vcftbi_stats_oribias_segm_table_est.view()
     //> [[id:WT_REP1, single_end:false], .../WT_REP1.vcf.gz, .../WT_REP1.vcf.gz.tbi, .../WT_REP1.vcf.gz.stats, [], [], [], []]
 
-    // //
-    // // MODULE: GATK4_FILTERMUTECTCALLS
-    // //
     GATK4_FILTERMUTECTCALLS (
     tup_meta_vcf_vcftbi_stats_oribias_segm_table_est,// tuple val(meta), path(vcf), path(vcf_tbi), path(stats), path(orientationbias), path(segmentation), path(table), val(estimate)
     ch_genome_fasta, // tuple val(meta2), path(fasta)
     SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
     SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
+    )
+
+    // //
+    // // MODULE: BCFTOOLS_INDEX
+    // //
+    ch_dbsnp_vcf = Channel.fromPath(params.known_dbsnp).map { it -> [[id:it[0].simpleName], it] }.collect()
+    // ch_dbsnp_vcf.view()
+    //> [['id':'nf-core'], /nf-core/test-datasets/raredisease/reference/dbsnp_-138-.vcf.gz]
+    BCFTOOLS_INDEX (
+    ch_dbsnp_vcf // tuple val(meta), path(vcf)
+    )
+
+    // //
+    // // MODULE: GATK4_HAPLOTYPECALLER
+    // //
+    tup_meta_bam_bai_int_dragstr = tup_meta_bam_bai_int.map{ meta, bam, bai, interv -> [ meta, bam, bai, interv, [] ] } 
+    // tup_meta_bam_bai_int_dragstr.view()
+    //> [[id:hugelymodelbat, single_end:false], .../hugelymodelbat.dup.bam,.../hugelymodelbat.dup.bai, [], []]
+
+    GATK4_HAPLOTYPECALLER (
+    tup_meta_bam_bai_int_dragstr, // tuple val(meta),  path(input), path(input_index), path(intervals), path(dragstr_model)
+    ch_genome_fasta, // tuple val(meta2), path(fasta)
+    SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
+    SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
+    ch_dbsnp_vcf, // tuple val(meta5), path(dbsnp)
+    BCFTOOLS_INDEX.out.tbi // tuple val(meta6), path(dbsnp_tbi)
     )
 
     emit:
