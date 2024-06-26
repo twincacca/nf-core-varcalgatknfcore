@@ -303,6 +303,27 @@
         "sort_order": {
             "type": "string",
             "default": "coordinate"
+        },
+        "fasta": {
+            "type": "string"
+        },
+        "vcf_forbasecalibrator": {
+            "type": "string"
+        },
+        "vcf_forhaplotypecaller": {
+            "type": "string"
+        },
+        "vcf_germline_resource": {
+            "type": "string"
+        },
+        "vcf_germline_resource_tbi": {
+            "type": "string"
+        },
+        "vcf_panel_of_normals": {
+            "type": "string"
+        },
+        "vcf_panel_of_normals_tbi": {
+            "type": "string"
         }
     }
 }

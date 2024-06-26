@@ -17,14 +17,17 @@ include { PICARD_ADDORREPLACEREADGROUPS } from '../modules/nf-core/picard/addorr
 include { PICARD_SORTSAM } from '../modules/nf-core/picard/sortsam/main'
 include { PICARD_MARKDUPLICATES } from '../modules/nf-core/picard/markduplicates/main'
 include { GATK4_BASERECALIBRATOR } from '../modules/nf-core/gatk4/baserecalibrator/main'
+// include { GATK4SPARK_BASERECALIBRATOR } from '../modules/nf-core/gatk4spark/baserecalibrator/main' 
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
 include { SAMTOOLS_DICT } from '../modules/nf-core/samtools/dict/main'
 include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
 include { GATK4_APPLYBQSR } from '../modules/nf-core/gatk4/applybqsr/main'
+// include { GATK4SPARK_APPLYBQSR } from '../modules/nf-core/gatk4spark/applybqsr/main'                                                                                                         
 include { GATK4_MUTECT2 } from '../modules/nf-core/gatk4/mutect2/main'
 include { GATK4_FILTERMUTECTCALLS } from '../modules/nf-core/gatk4/filtermutectcalls'
 include { GATK4_HAPLOTYPECALLER } from '../modules/nf-core/gatk4/haplotypecaller/main'
-include { BCFTOOLS_INDEX } from '../modules/nf-core/bcftools/index/main'
+include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_forhaplotypecaller } from '../modules/nf-core/bcftools/index/main'
+include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_forbasecalibrator } from '../modules/nf-core/bcftools/index/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,6 +177,18 @@ workflow VARCALGATKNFCORE {
     ch_genome_fasta // tuple val(meta), path(input)
     )
 
+
+
+    // //
+    // // MODULE: BCFTOOLS_INDEX
+    // //
+    ch_vcf_forbasecalibrator = Channel.fromPath(params.vcf_forbasecalibrator).map { it -> [[id:it[0].simpleName], it] }.collect()
+    // ch_vcf_forbasecalibrator.view() 
+    //> [['id':'nf-core'], /nf-core/test-datasets/raredisease/reference/dbsnp_-138-.vcf.gz]
+    BCFTOOLS_INDEX_forbasecalibrator (
+    ch_vcf_forbasecalibrator // tuple val(meta), path(vcf)
+    )
+
     // //
     // // MODULE: GATK4_BASERECALIBRATOR
     // //
@@ -192,8 +207,9 @@ workflow VARCALGATKNFCORE {
     params.fasta, // path  fasta
     SAMTOOLS_FAIDX.out.fai.map{ meta, f -> [f] }, // path  fai
     SAMTOOLS_DICT.out.dict.map{ meta, f -> [f] }, // path  dict 
-    params.vcf, // path  known_sites 
-    params.vcf_tbi // path  known_sites_tbi
+    params.vcf_forbasecalibrator, // path  known_sites 
+    BCFTOOLS_INDEX_forbasecalibrator.out.tbi.map{ meta, f -> [f] } // path  known_sites_tbi
+    // params.vcf_forbasecalibrator_tbi
     )
 
     // //
@@ -214,15 +230,20 @@ workflow VARCALGATKNFCORE {
     // //
     // // MODULE: GATK4_MUTECT2
     // //
+    ch_vcf_germline_resource = params.vcf_germline_resource ? params.vcf_germline_resource : []
+    ch_vcf_germline_resource_tbi = params.vcf_germline_resource_tbi ? params.vcf_germline_resource_tbi : []
+    ch_vcf_panel_of_normals = params.vcf_panel_of_normals ? params.vcf_panel_of_normals : []
+    ch_vcf_panel_of_normals_tbi = params.vcf_panel_of_normals_tbi ? params.vcf_panel_of_normals_tbi : []
+
     GATK4_MUTECT2 (
     tup_meta_bam_bai_int, // tuple val(meta), path(input), path(input_index), path(intervals)
     ch_genome_fasta, // tuple val(meta2), path(fasta)
     SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
     SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
-    [], // path(germline_resource) .vcf.gz
-    [], // path(germline_resource_tbi) .vcf.gz.tbi
-    [], // path(panel_of_normals) .vcf.gz
-    [], // path(panel_of_normals_tbi) .vcf.gz.tbi
+    ch_vcf_germline_resource, // path(germline_resource) .vcf.gz
+    ch_vcf_germline_resource_tbi, // path(germline_resource_tbi) .vcf.gz.tbi // VCF file of sites observed in normal.
+    ch_vcf_panel_of_normals, // path(panel_of_normals) .vcf.gz // Population vcf of germline sequencing containing allele fractions.
+    ch_vcf_panel_of_normals_tbi // path(panel_of_normals_tbi) .vcf.gz.tbi
     )
 
 
@@ -252,11 +273,13 @@ workflow VARCALGATKNFCORE {
     // //
     // // MODULE: BCFTOOLS_INDEX
     // //
-    ch_dbsnp_vcf = Channel.fromPath(params.known_dbsnp).map { it -> [[id:it[0].simpleName], it] }.collect()
-    // ch_dbsnp_vcf.view()
+    ch_vcf_forhaplotypecaller = Channel.fromPath(params.vcf_forhaplotypecaller).map { it -> [[id:it[0].simpleName], it] }.collect()
+    // ch_vcf_forhaplotypecaller.view() 
     //> [['id':'nf-core'], /nf-core/test-datasets/raredisease/reference/dbsnp_-138-.vcf.gz]
-    BCFTOOLS_INDEX (
-    ch_dbsnp_vcf // tuple val(meta), path(vcf)
+    // ch_vcf_forhaplotypecaller_tbi = Channel.fromPath(params.vcf_forhaplotypecaller_tbi).map { it -> [[id:it[0].simpleName], it] }.collect()
+
+    BCFTOOLS_INDEX_forhaplotypecaller (
+    ch_vcf_forhaplotypecaller // tuple val(meta), path(vcf)
     )
 
     // //
@@ -271,8 +294,9 @@ workflow VARCALGATKNFCORE {
     ch_genome_fasta, // tuple val(meta2), path(fasta)
     SAMTOOLS_FAIDX.out.fai, // tuple val(meta3), path(fai)
     SAMTOOLS_DICT.out.dict, // tuple val(meta4), path(dict)
-    ch_dbsnp_vcf, // tuple val(meta5), path(dbsnp)
-    BCFTOOLS_INDEX.out.tbi // tuple val(meta6), path(dbsnp_tbi)
+    ch_vcf_forhaplotypecaller, // tuple val(meta5), path(dbsnp)
+    BCFTOOLS_INDEX_forhaplotypecaller.out.tbi // tuple val(meta6), path(dbsnp_tbi)
+    // ch_vcf_forhaplotypecaller_tbi
     )
 
     emit:
