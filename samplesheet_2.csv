@@ -1,0 +1,4 @@
+sample,fastq_1,fastq_2
+SRR7890830,/home/antoinebuetti/Desktop/nobkp/data_for_testing_nfcore_varcall/SRR7890830_1.fastq.gz,/home/antoinebuetti/Desktop/nobkp/data_for_testing_nfcore_varcall/SRR7890830_2.fastq.gz
+SRR7890846,/home/antoinebuetti/Desktop/nobkp/data_for_testing_nfcore_varcall/SRR7890846_1.fastq.gz,/home/antoinebuetti/Desktop/nobkp/data_for_testing_nfcore_varcall/SRR7890846_2.fastq.gz
+SRR7890877,/home/antoinebuetti/Desktop/nobkp/data_for_testing_nfcore_varcall/SRR7890877_1.fastq.gz,/home/antoinebuetti/Desktop/nobkp/data_for_testing_nfcore_varcall/SRR7890877_2.fastq.gz

@@ -108,6 +108,16 @@
                         "branch": "master",
                         "git_sha": "04fbbc7c43cebc0b95d5b126f6d9fe4effa33519",
                         "installed_by": ["modules"]
+                    },
+                    "snpeff/download": {
+                        "branch": "master",
+                        "git_sha": "214d575774c172062924ad3564b4f66655600730",
+                        "installed_by": ["modules"]
+                    },
+                    "snpeff/snpeff": {
+                        "branch": "master",
+                        "git_sha": "2f3db6f45147ebbb56b371536e31bdf622b5bfee",
+                        "installed_by": ["modules"]
                     }
                 }
             },
