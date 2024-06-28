@@ -324,6 +324,14 @@
         },
         "vcf_panel_of_normals_tbi": {
             "type": "string"
+        },
+        "snpeff_genome": {
+            "type": "string",
+            "default": "GRCh38"
+        },
+        "snpeff_db": {
+            "type": "integer",
+            "default": 86
         }
     }
 }

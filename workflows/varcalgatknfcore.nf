@@ -28,6 +28,8 @@ include { GATK4_FILTERMUTECTCALLS } from '../modules/nf-core/gatk4/filtermutectc
 include { GATK4_HAPLOTYPECALLER } from '../modules/nf-core/gatk4/haplotypecaller/main'
 include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_forhaplotypecaller } from '../modules/nf-core/bcftools/index/main'
 include { BCFTOOLS_INDEX as BCFTOOLS_INDEX_forbasecalibrator } from '../modules/nf-core/bcftools/index/main'
+include { SNPEFF_SNPEFF } from '../modules/nf-core/snpeff/snpeff/main'
+include { SNPEFF_DOWNLOAD } from '../modules/nf-core/snpeff/download/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -298,6 +300,27 @@ workflow VARCALGATKNFCORE {
     BCFTOOLS_INDEX_forhaplotypecaller.out.tbi // tuple val(meta6), path(dbsnp_tbi)
     // ch_vcf_forhaplotypecaller_tbi
     )
+
+    // //
+    // // MODULE: SNPEFF_DOWNLOAD
+    // //
+    inp_snp_eff_download =  Channel.of([ [ id:"${params.snpeff_genome}.${params.snpeff_db}" ], params.snpeff_genome, params.snpeff_db ])
+    SNPEFF_DOWNLOAD (
+    inp_snp_eff_download // tuple val(meta), val(genome), val(cache_version)
+    )
+
+    // //
+    // // MODULE: SNPEFF_SNPEFF
+    // //
+    SNPEFF_SNPEFF (
+    GATK4_HAPLOTYPECALLER.out.vcf, // tuple val(meta), path(vcf)
+    "${params.snpeff_genome}.${params.snpeff_db}",// val   db // 'GRCh38.76'
+    SNPEFF_DOWNLOAD.out.cache // tuple val(meta2), path(cache) // [[:],[]] 
+    )
+
+
+
+
 
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
